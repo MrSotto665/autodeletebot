@@ -22,7 +22,7 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
             print("ℹ️ Skipping system message.")
             return
 
-        await asyncio.sleep(600)  # wait 10 minutes
+        await asyncio.sleep(100)  # wait 10 minutes
 
         try:
             me = await context.bot.get_chat_member(chat_id, context.bot.id)
