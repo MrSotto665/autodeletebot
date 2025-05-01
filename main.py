@@ -11,30 +11,36 @@ app = FastAPI()
 bot_app = Application.builder().token(TOKEN).build()
 
 # Function to delete messages after 2 minutes
+# Function to delete messages after 10 minutes (600 seconds)
 async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        # Skip join/leave system messages
+        # Skip system messages like joins/leaves
         if update.message.new_chat_members or update.message.left_chat_member:
             print("ℹ️ Skipping system message.")
             return
 
-        await asyncio.sleep(600)  # wait 2 minutes
+        await asyncio.sleep(600)  # wait 10 minutes
 
         try:
+            # Check if bot has permission
             me = await context.bot.get_chat_member(chat_id, context.bot.id)
-            print(f"🤖 Bot status in chat {chat_id}: {me.status}, can_delete_messages={me.can_delete_messages}")
-
             if not (me.can_delete_messages or me.status == "creator"):
                 print("❌ Bot lacks permission to delete messages.")
                 return
 
+            # Try deleting the message
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
-            print(f"✅ Message {message_id} deleted.")
+            print(f"✅ Deleted message {message_id} from chat {chat_id}")
+
         except Exception as e:
-            print(f"❌ Delete failed for message {message_id}: {e}")
+            if "message to delete not found" in str(e).lower():
+                print(f"⚠️ Message {message_id} was already deleted manually.")
+            else:
+                print(f"❌ Unexpected error deleting message {message_id}: {e}")
+
 
 # Register handler for all messages
 bot_app.add_handler(MessageHandler(filters.ALL, delete_after_delay))
