@@ -12,37 +12,40 @@ bot_app = Application.builder().token(TOKEN).build()
 
 # Function to delete messages after 2 minutes
 # Function to delete messages after 10 minutes (600 seconds)
+# Function to delete messages after 10 minutes
 async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        # Skip system messages
+        # Skip join/leave system messages
         if update.message.new_chat_members or update.message.left_chat_member:
             print("ℹ️ Skipping system message.")
             return
 
-        await asyncio.sleep(100)  # wait 10 minutes
+        await asyncio.sleep(600)  # wait 10 minutes
 
         try:
             me = await context.bot.get_chat_member(chat_id, context.bot.id)
 
-            if me.status == "administrator":
-                if not me.can_delete_messages:
-                    print("❌ Bot is admin but can't delete messages.")
-                    return
-            elif me.status != "creator":
-                print("❌ Bot is not admin or creator, can't delete messages.")
+            # Check permission safely
+            can_delete = getattr(me, "can_delete_messages", False)
+            if me.status == "administrator" and not can_delete:
+                print("❌ Bot is admin but lacks delete permission.")
+                return
+            elif me.status not in ["administrator", "creator"]:
+                print("❌ Bot is not admin/creator.")
                 return
 
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
             print(f"✅ Deleted message {message_id} from chat {chat_id}")
 
         except Exception as e:
-            if "message to delete not found" in str(e).lower():
-                print(f"⚠️ Message {message_id} was already deleted manually.")
+            error_text = str(e).lower()
+            if "message to delete not found" in error_text or "message can't be deleted" in error_text:
+                print(f"⚠️ Message {message_id} was already deleted or cannot be deleted.")
             else:
-                print(f"❌ Unexpected error deleting message {message_id}: {e}")
+                print(f"❌ Unexpected error while deleting message {message_id}: {e}")
 
 
 
