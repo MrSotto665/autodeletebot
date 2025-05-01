@@ -17,7 +17,7 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        # Skip system messages like joins/leaves
+        # Skip system messages
         if update.message.new_chat_members or update.message.left_chat_member:
             print("ℹ️ Skipping system message.")
             return
@@ -25,13 +25,16 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await asyncio.sleep(600)  # wait 10 minutes
 
         try:
-            # Check if bot has permission
             me = await context.bot.get_chat_member(chat_id, context.bot.id)
-            if not (me.can_delete_messages or me.status == "creator"):
-                print("❌ Bot lacks permission to delete messages.")
+
+            if me.status == "administrator":
+                if not me.can_delete_messages:
+                    print("❌ Bot is admin but can't delete messages.")
+                    return
+            elif me.status != "creator":
+                print("❌ Bot is not admin or creator, can't delete messages.")
                 return
 
-            # Try deleting the message
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
             print(f"✅ Deleted message {message_id} from chat {chat_id}")
 
@@ -40,6 +43,7 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
                 print(f"⚠️ Message {message_id} was already deleted manually.")
             else:
                 print(f"❌ Unexpected error deleting message {message_id}: {e}")
+
 
 
 # Register handler for all messages
