@@ -10,19 +10,20 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-service-name.onrende
 app = FastAPI()
 bot_app = Application.builder().token(TOKEN).build()
 
-# Delete message after 2 minutes
+# Function to delete message after 2 minutes
 async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        await asyncio.sleep(120)
+        await asyncio.sleep(120)  # 2 minutes delay
         try:
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
+            print(f"Message {message_id} deleted.")
         except Exception as e:
-            print(f"Delete failed: {e}")
+            print(f"Delete failed for message {message_id}: {e}")
 
-# Register handler
+# Register handler for all messages
 bot_app.add_handler(MessageHandler(filters.ALL, delete_after_delay))
 
 # Webhook endpoint for Telegram
