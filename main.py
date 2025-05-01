@@ -16,7 +16,7 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        await asyncio.sleep(120)  # 2 minutes
+        await asyncio.sleep(120)
         try:
             await context.bot.delete_message(chat_id=chat_id, message_id=message_id)
         except Exception as e:
@@ -28,20 +28,23 @@ bot_app.add_handler(MessageHandler(filters.ALL, delete_after_delay))
 # Webhook endpoint for Telegram
 @app.post("/webhook")
 async def telegram_webhook(req: Request):
-    data = await req.json()
-    update = Update.de_json(data, bot_app.bot)
+    update = Update.de_json(await req.json(), bot_app.bot)
+    # SAFETY CHECK: Ensure initialized before processing
+    if not bot_app.running:
+        await bot_app.initialize()
+        await bot_app.start()
     await bot_app.process_update(update)
     return {"ok": True}
 
-# Startup: initialize app and set webhook
+# Set webhook on startup
 @app.on_event("startup")
-async def setup_webhook():
-    print(f"Setting webhook: {WEBHOOK_URL}")
+async def startup():
     await bot_app.initialize()
-    await bot_app.bot.set_webhook(WEBHOOK_URL)
     await bot_app.start()
+    await bot_app.bot.set_webhook(WEBHOOK_URL)
+    print(f"✅ Webhook set to: {WEBHOOK_URL}")
 
-# Shutdown: clean exit
+# Graceful shutdown
 @app.on_event("shutdown")
 async def shutdown():
     await bot_app.stop()
