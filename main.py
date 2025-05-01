@@ -4,7 +4,6 @@ from telegram.ext import Application, MessageHandler, ContextTypes, filters
 import asyncio
 import os
 
-# Load bot token and webhook URL from environment variables
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-service-name.onrender.com/webhook
 
@@ -17,10 +16,14 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
         chat_id = update.message.chat.id
         message_id = update.message.message_id
 
-        await asyncio.sleep(120)  # 2 minutes
+        # Skip join/leave system messages
+        if update.message.new_chat_members or update.message.left_chat_member:
+            print("ℹ️ Skipping system message.")
+            return
+
+        await asyncio.sleep(10)  # wait 2 minutes
 
         try:
-            # Check if bot has permission to delete messages
             me = await context.bot.get_chat_member(chat_id, context.bot.id)
             print(f"🤖 Bot status in chat {chat_id}: {me.status}, can_delete_messages={me.can_delete_messages}")
 
@@ -36,26 +39,28 @@ async def delete_after_delay(update: Update, context: ContextTypes.DEFAULT_TYPE)
 # Register handler for all messages
 bot_app.add_handler(MessageHandler(filters.ALL, delete_after_delay))
 
-# Webhook endpoint
+# Telegram webhook endpoint
 @app.post("/webhook")
 async def telegram_webhook(req: Request):
     update = Update.de_json(await req.json(), bot_app.bot)
+
     if not bot_app.running:
         await bot_app.initialize()
         await bot_app.start()
+
     await bot_app.process_update(update)
     return {"ok": True}
 
-# Set webhook on startup
+# On startup: set webhook
 @app.on_event("startup")
-async def startup():
+async def on_startup():
     await bot_app.initialize()
     await bot_app.start()
     await bot_app.bot.set_webhook(WEBHOOK_URL)
     print(f"✅ Webhook set to: {WEBHOOK_URL}")
 
-# Stop bot on shutdown
+# On shutdown: clean exit
 @app.on_event("shutdown")
-async def shutdown():
+async def on_shutdown():
     await bot_app.stop()
     await bot_app.shutdown()
