@@ -8,7 +8,7 @@ import uvicorn
 # Get credentials from environment variables
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
-MESSAGE_TEXT = "👆"
+MESSAGE_TEXT = "Use this dirty chats👉🏻 https://t.me/BabyMonika_Bot/RandomVideochat"
 
 # Type check for CHANNEL_ID (as env var comes as string)
 try:
@@ -44,7 +44,7 @@ async def bot_loop():
         except Exception as e:
             print(f"Bot error: {e}")
 
-        await asyncio.sleep(1800)  # 30 minutes
+        await asyncio.sleep(300)  # 30 minutes
 
 
 @app.on_event("startup")
