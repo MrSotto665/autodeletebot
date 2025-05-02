@@ -72,7 +72,7 @@ async def bot_loop():
 async def delete_old_user_messages():
     while True:
         now = datetime.now(timezone.utc)
-        to_delete = [m for m in user_messages if now - m["timestamp"] > timedelta(minutes=299)]
+        to_delete = [m for m in user_messages if now - m["timestamp"] > timedelta(minutes=5)]
 
         for m in to_delete:
             try:
