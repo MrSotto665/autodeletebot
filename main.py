@@ -11,6 +11,7 @@ from telegram.ext import Application, AIORateLimiter
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
+CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
 
 MESSAGE_TEXT = "Use this dirty chats👉🏻 https://t.me/BabyMonika_Bot/RandomVideochat"
 
@@ -40,13 +41,35 @@ async def webhook_handler(request: Request):
         msg = update.message
         if msg.chat.id == CHANNEL_ID:
             if not msg.from_user.is_bot:
-                # Save user message for later deletion
-                user_messages.append({
-                    "message_id": msg.message_id,
-                    "timestamp": datetime.now(timezone.utc),
-                })
+                # Check if user is a member of the channel
+                try:
+                    member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
+                    if member.status in ["member", "administrator", "creator"]:
+                        # Member is allowed
+                        user_messages.append({
+                            "message_id": msg.message_id,
+                            "timestamp": datetime.now(timezone.utc),
+                        })
+                    else:
+                        raise Exception("Not a member")
+                except Exception as e:
+                    # Delete message and send join prompt
+                    try:
+                        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
+                    except TelegramError as te:
+                        print(f"Failed to delete message: {te}")
+
+                    try:
+                        await bot.send_message(
+                            chat_id=msg.chat.id,
+                            text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
+                            reply_to_message_id=msg.message_id
+                        )
+                    except TelegramError as te:
+                        print(f"Failed to send join message: {te}")
 
     return {"ok": True}
+
 
 async def bot_loop():
     global last_bot_message_id
