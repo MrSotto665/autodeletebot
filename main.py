@@ -63,7 +63,7 @@ async def webhook_handler(request: Request):
                         await bot.send_message(
                             chat_id=msg.chat.id,
                             text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
-                            reply_to_message_id=msg.message_id
+                    
                         )
                     except TelegramError as te:
                         print(f"Failed to send join message: {te}")
