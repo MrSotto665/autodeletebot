@@ -41,11 +41,9 @@ async def webhook_handler(request: Request):
         msg = update.message
         if msg.chat.id == CHANNEL_ID:
             if not msg.from_user.is_bot:
-                # Check if user is a member of the channel
                 try:
                     member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
                     if member.status in ["member", "administrator", "creator"]:
-                        # Member is allowed
                         user_messages.append({
                             "message_id": msg.message_id,
                             "timestamp": datetime.now(timezone.utc),
@@ -53,23 +51,21 @@ async def webhook_handler(request: Request):
                     else:
                         raise Exception("Not a member")
                 except Exception as e:
-                    # Delete message and send join prompt
                     try:
                         await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
                     except TelegramError as te:
                         print(f"Failed to delete message: {te}")
-
                     try:
-    sent_msg = await bot.send_message(
-        chat_id=msg.chat.id,
-        text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
-    )
-    asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
-except TelegramError as te:
-    print(f"Failed to send join message: {te}")
-
+                        sent_msg = await bot.send_message(
+                            chat_id=msg.chat.id,
+                            text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
+                        )
+                        asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
+                    except TelegramError as te:
+                        print(f"Failed to send join message: {te}")
 
     return {"ok": True}
+
 
 
 async def bot_loop():
