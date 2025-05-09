@@ -65,6 +65,8 @@ async def webhook_handler(request: Request):
                             text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
                     
                         )
+                        # Schedule deletion after 30 seconds
+asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
                         print(f"Failed to send join message: {te}")
 
@@ -106,3 +108,11 @@ async def delete_old_user_messages():
                 print(f"User delete failed: {e}")
 
         await asyncio.sleep(30)
+
+async def delete_prompt_after_delay(chat_id, message_id):
+    await asyncio.sleep(30)
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except TelegramError as e:
+        print(f"Failed to delete prompt message: {e}")
+
