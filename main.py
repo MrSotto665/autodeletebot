@@ -13,7 +13,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
 
-MESSAGE_TEXT = "Use this dirty chats👉🏻 https://t.me/BabyMonika_Bot/RandomVideochat"
+MESSAGE_TEXT = "Daily new members added in this chat zone👉🏻 https://t.me/MakefriendsglobalBot/Letschat"
 
 app = FastAPI()
 bot = Bot(token=TOKEN)
