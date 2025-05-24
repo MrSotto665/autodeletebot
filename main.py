@@ -58,7 +58,7 @@ async def webhook_handler(request: Request):
                     try:
                         sent_msg = await bot.send_message(
                             chat_id=msg.chat.id,
-                            text=f"🛑 Please join our channel first to chat here:\n👉 {CHANNEL_USERNAME}",
+                            text=f"🛑 To chat here Please join our channel first :\n👉 {CHANNEL_USERNAME}",
                         )
                         asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
