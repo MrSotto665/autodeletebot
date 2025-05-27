@@ -84,7 +84,7 @@ async def webhook_handler(request: Request):
                     except TelegramError as te:
                         print(f"Failed to send join message: {te}")
 
-    return {"ok": True"}
+    return {"ok": True}
 
 
 
