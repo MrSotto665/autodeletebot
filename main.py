@@ -42,14 +42,19 @@ async def webhook_handler(request: Request):
         if msg.chat.id == CHANNEL_ID:
             if not msg.from_user.is_bot:
                 try:
-                    member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
-                    if member.status in ["member", "administrator", "creator"]:
+                    member1 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
+                    member2 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME1, user_id=msg.from_user.id)
+
+                    if (
+                        member1.status in ["member", "administrator", "creator"] and
+                        member2.status in ["member", "administrator", "creator"]
+                    ):
                         user_messages.append({
                             "message_id": msg.message_id,
                             "timestamp": datetime.now(timezone.utc),
                         })
                     else:
-                        raise Exception("Not a member")
+                        raise Exception("User not joined both channels")
                 except Exception as e:
                     try:
                         await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
@@ -58,14 +63,13 @@ async def webhook_handler(request: Request):
                     try:
                         sent_msg = await bot.send_message(
                             chat_id=msg.chat.id,
-                            text=f"🛑 To chat here Please join our all channel first :\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
+                            text=f"🛑 You need to join all channel to chat here:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
                         )
                         asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
                         print(f"Failed to send join message: {te}")
 
     return {"ok": True}
-
 
 
 async def bot_loop():
@@ -110,4 +114,3 @@ async def delete_prompt_after_delay(chat_id, message_id):
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
     except TelegramError as e:
         print(f"Failed to delete prompt message: {e}")
-
