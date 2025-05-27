@@ -4,7 +4,6 @@ from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from telegram import Bot, Update
 from telegram.constants import ParseMode
-from telegram.helpers import escape_markdown
 from telegram.error import TelegramError
 from telegram.ext import Application, AIORateLimiter
 
@@ -71,41 +70,47 @@ async def webhook_handler(request: Request):
                     else:
                         raise Exception("User not joined both channels")
                 except Exception as e:
-    try:
-        # ✅ First send warning reply
-        sent_msg = await bot.send_message(
-            chat_id=msg.chat.id,
-            reply_to_message_id=msg.message_id,
-            text=f"🛑 To chat here, you must join both of our channels first:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
-        )
-        asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
-    except TelegramError as te:
-        print(f"Failed to send join warning: {te}")
+                    try:
+                        username = msg.from_user.username
+                        if username:
+                            mention = f"[@{username}](tg://user?id={msg.from_user.id})"
+                        else:
+                            mention = f"[User](tg://user?id={msg.from_user.id})"
 
-    try:
-        # ✅ Then delete user's original message
-        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
-        print(f"Deleted user message {msg.message_id} for not joining channels")
-    except TelegramError as te:
-        print(f"Failed to delete message: {te}")
+                        warning_text = (
+                            f"🛑 {mention}, to chat here, you must join both of our channels first:\n"
+                            f"👉 {CHANNEL_USERNAME} \n"
+                            f"👉 {CHANNEL_USERNAME1}"
+                        )
 
+                        sent_msg = await bot.send_message(
+                            chat_id=msg.chat.id,
+                            reply_to_message_id=msg.message_id,
+                            text=warning_text,
+                            parse_mode=ParseMode.MARKDOWN_V2,
+                        )
+                        asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
+                    except TelegramError as te:
+                        print(f"Failed to send join warning: {te}")
+
+                    try:
+                        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
+                        print(f"Deleted user message {msg.message_id} for not joining channels")
+                    except TelegramError as te:
+                        print(f"Failed to delete message: {te}")
 
     return {"ok": True}
-
-
 
 async def bot_loop():
     global last_bot_message_id
     while True:
         try:
-            # Delete old bot message
             if last_bot_message_id:
                 try:
                     await bot.delete_message(chat_id=CHANNEL_ID, message_id=last_bot_message_id)
                 except Exception as e:
                     print(f"Bot delete failed: {e}")
 
-            # Send new message
             sent = await bot.send_message(chat_id=CHANNEL_ID, text=MESSAGE_TEXT, parse_mode=ParseMode.HTML)
             last_bot_message_id = sent.message_id
             print(f"Sent bot message {last_bot_message_id}")
