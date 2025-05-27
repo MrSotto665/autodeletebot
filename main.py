@@ -71,18 +71,24 @@ async def webhook_handler(request: Request):
                     else:
                         raise Exception("User not joined both channels")
                 except Exception as e:
-                    try:
-                        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
-                    except TelegramError as te:
-                        print(f"Failed to delete message: {te}")
-                    try:
-                        sent_msg = await bot.send_message(
-                            chat_id=msg.chat.id,
-                            text=f"🛑 To chat here, you must join both of our channels:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
-                        )
-                        asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
-                    except TelegramError as te:
-                        print(f"Failed to send join message: {te}")
+    try:
+        # ✅ First send warning reply
+        sent_msg = await bot.send_message(
+            chat_id=msg.chat.id,
+            reply_to_message_id=msg.message_id,
+            text=f"🛑 To chat here, you must join both of our channels first:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
+        )
+        asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
+    except TelegramError as te:
+        print(f"Failed to send join warning: {te}")
+
+    try:
+        # ✅ Then delete user's original message
+        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
+        print(f"Deleted user message {msg.message_id} for not joining channels")
+    except TelegramError as te:
+        print(f"Failed to delete message: {te}")
+
 
     return {"ok": True}
 
