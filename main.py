@@ -12,7 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
-
+CHANNEL_USERNAME1 = os.getenv("CHANNEL_USERNAME1")
 MESSAGE_TEXT = "Daily new members added in this chat zone👉🏻 https://t.me/MakefriendsglobalBot/Letschat"
 
 app = FastAPI()
@@ -58,7 +58,7 @@ async def webhook_handler(request: Request):
                     try:
                         sent_msg = await bot.send_message(
                             chat_id=msg.chat.id,
-                            text=f"🛑 To chat here Please join our channel first :\n👉 {CHANNEL_USERNAME}",
+                            text=f"🛑 To chat here Please join our all channel first :\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
                         )
                         asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
