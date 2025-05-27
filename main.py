@@ -41,6 +41,21 @@ async def webhook_handler(request: Request):
         msg = update.message
         if msg.chat.id == CHANNEL_ID:
             if not msg.from_user.is_bot:
+                # ✅ Check for links and delete if not admin
+                if msg.text and any(link in msg.text.lower() for link in ["http://", "https://", "t.me/", "telegram.me/"]):
+                    try:
+                        chat_member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=msg.from_user.id)
+                        if chat_member.status not in ["administrator", "creator"]:
+                            await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
+                            print(f"Link message deleted from user: {msg.message_id}")
+                            return {"ok": True}
+                        else:
+                            print("Admin sent a link, allowed.")
+                    except TelegramError as e:
+                        print(f"Error while checking admin status or deleting: {e}")
+                        return {"ok": True}
+
+                # ✅ Check if user is member of both channels
                 try:
                     member1 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
                     member2 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME1, user_id=msg.from_user.id)
@@ -63,13 +78,14 @@ async def webhook_handler(request: Request):
                     try:
                         sent_msg = await bot.send_message(
                             chat_id=msg.chat.id,
-                            text=f"🛑 You need to join all channel to chat here:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
+                            text=f"🛑 To chat here, you must join both of our channels:\n👉 {CHANNEL_USERNAME} \n👉 {CHANNEL_USERNAME1}",
                         )
                         asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
                         print(f"Failed to send join message: {te}")
 
-    return {"ok": True}
+    return {"ok": True"}
+
 
 
 async def bot_loop():
