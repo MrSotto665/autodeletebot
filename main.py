@@ -78,9 +78,9 @@ async def webhook_handler(request: Request):
                             mention = f"[User](tg://user?id={msg.from_user.id})"
 
                         warning_text = (
-                            f"🛑 {mention}, to chat here, you must join both of our channels first:\n"
-                            f"👉 {CHANNEL_USERNAME} \n"
-                            f"👉 {CHANNEL_USERNAME1}"
+                            f"🛑 {mention}, এই দুইটা চ্যানেল জয়েন করো, তবেই গ্রুপে চ্যাট করতে পারবা। :\n"
+                            f" Channel 1👉 {CHANNEL_USERNAME} \n"
+                            f" Channel 2👉 {CHANNEL_USERNAME1}"
                         )
 
                         sent_msg = await bot.send_message(
