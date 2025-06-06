@@ -93,11 +93,8 @@ async def webhook_handler(request: Request):
                     except TelegramError as te:
                         print(f"Failed to send join warning: {te}")
 
-                    try:
-                        await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
-                        print(f"Deleted user message {msg.message_id} for not joining channels")
-                    except TelegramError as te:
-                        print(f"Failed to delete message: {te}")
+                    # ❌ Message will not be deleted anymore
+                    # Previously deleted user message removed here intentionally
 
     return {"ok": True}
 
