@@ -12,7 +12,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
 CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
 CHANNEL_USERNAME1 = os.getenv("CHANNEL_USERNAME1")
-MESSAGE_TEXT = "এখানে সবাই চ্যাট করে, সবাই একটিভ থাকে। এখানেই মজা, এখানেই আড্ডা! 💬🔥\nনিচের লিংকে গিয়ে চ্যাট করো। 💬👇\nhttps://t.me/MakefriendsglobalBot/Letschat"
+MESSAGE_TEXT = "Girls and boys chat zone \nClick the link below to join the chat. 💬👇\nhttps://t.me/MakefriendsglobalBot/Letschat"
 
 app = FastAPI()
 bot = Bot(token=TOKEN)
@@ -78,7 +78,7 @@ async def webhook_handler(request: Request):
                             mention = f"[User](tg://user?id={msg.from_user.id})"
 
                         warning_text = (
-                            f"🛑 {mention}, এই দুইটা চ্যানেল জয়েন করো, তবেই গ্রুপে চ্যাট করতে পারবা। :\n"
+                            f"🛑 {mention}, Join our channels to chat in this group :\n"
                             f" Channel 1👉 {CHANNEL_USERNAME} \n"
                             f" Channel 2👉 {CHANNEL_USERNAME1}"
                         )
