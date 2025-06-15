@@ -139,7 +139,7 @@ async def delete_prompt_after_delay(chat_id, message_id):
 # ✅ New feature: Mention random users every 30 minutes
 async def mention_random_users():
     while True:
-        await asyncio.sleep(1800)  # 30 minutes
+        await asyncio.sleep(250)  # 30 minutes
         try:
             recent_users = list({m["user_id"]: m for m in reversed(user_messages)}.values())
             selected_users = random.sample(recent_users, min(6, len(recent_users)))
