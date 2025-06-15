@@ -1,5 +1,6 @@
 import os
 import asyncio
+import random
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from telegram import Bot, Update
@@ -9,16 +10,14 @@ from telegram.ext import Application, AIORateLimiter
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
-CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")
 CHANNEL_USERNAME1 = os.getenv("CHANNEL_USERNAME1")
 MESSAGE_TEXT = "Girls and boys chat zone \nClick the link below to join the chat. 💬👇\nhttps://t.me/MakefriendsglobalBot/Letschat"
 
 app = FastAPI()
 bot = Bot(token=TOKEN)
 last_bot_message_id = None
-
-# In-memory message log (for user messages)
 user_messages = []
 
 @app.on_event("startup")
@@ -26,6 +25,7 @@ async def startup():
     await bot.set_webhook(url=WEBHOOK_URL + "/webhook")
     asyncio.create_task(bot_loop())
     asyncio.create_task(delete_old_user_messages())
+    asyncio.create_task(mention_random_users())  # ✅ New task added
 
 @app.get("/")
 async def root():
@@ -40,7 +40,6 @@ async def webhook_handler(request: Request):
         msg = update.message
         if msg.chat.id == CHANNEL_ID:
             if not msg.from_user.is_bot:
-                # ✅ Check for links and delete if not admin
                 if msg.text and any(link in msg.text.lower() for link in ["http://", "https://", "t.me/", "telegram.me/"]):
                     try:
                         chat_member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=msg.from_user.id)
@@ -54,7 +53,6 @@ async def webhook_handler(request: Request):
                         print(f"Error while checking admin status or deleting: {e}")
                         return {"ok": True}
 
-                # ✅ Check if user is member of both channels
                 try:
                     member1 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=msg.from_user.id)
                     member2 = await bot.get_chat_member(chat_id=CHANNEL_USERNAME1, user_id=msg.from_user.id)
@@ -66,6 +64,8 @@ async def webhook_handler(request: Request):
                         user_messages.append({
                             "message_id": msg.message_id,
                             "timestamp": datetime.now(timezone.utc),
+                            "user_id": msg.from_user.id,
+                            "username": msg.from_user.username,
                         })
                     else:
                         raise Exception("User not joined both channels")
@@ -92,9 +92,6 @@ async def webhook_handler(request: Request):
                         asyncio.create_task(delete_prompt_after_delay(sent_msg.chat_id, sent_msg.message_id))
                     except TelegramError as te:
                         print(f"Failed to send join warning: {te}")
-
-                    # ❌ Message will not be deleted anymore
-                    # Previously deleted user message removed here intentionally
 
     return {"ok": True}
 
@@ -138,3 +135,31 @@ async def delete_prompt_after_delay(chat_id, message_id):
         await bot.delete_message(chat_id=chat_id, message_id=message_id)
     except TelegramError as e:
         print(f"Failed to delete prompt message: {e}")
+
+# ✅ New feature: Mention random users every 30 minutes
+async def mention_random_users():
+    while True:
+        await asyncio.sleep(1800)  # 30 minutes
+        try:
+            recent_users = list({m["user_id"]: m for m in reversed(user_messages)}.values())
+            selected_users = random.sample(recent_users, min(6, len(recent_users)))
+
+            if selected_users:
+                mentions = []
+                for user in selected_users:
+                    if user["username"]:
+                        mention = f"[@{user['username']}](tg://user?id={user['user_id']})"
+                    else:
+                        mention = f"[User](tg://user?id={user['user_id']})"
+                    mentions.append(mention)
+
+                text = (
+                    f"{' '.join(mentions)}\n\n"
+                    "Download this Video chat app to enjoy free video call 🎥💬\n"
+                    "📥 Download link: https://1024terabox.com/s/1E5_FWd2ihEzDPkNBEtF_QQ"
+                )
+
+                await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode=ParseMode.MARKDOWN)
+                print("Sent random mention message.")
+        except Exception as e:
+            print(f"Random mention error: {e}")
