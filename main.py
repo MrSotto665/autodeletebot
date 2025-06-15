@@ -1,6 +1,5 @@
 import os
 import asyncio
-import random
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request
 from telegram import Bot, Update
@@ -10,14 +9,19 @@ from telegram.ext import Application, AIORateLimiter
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Example: https://yourdomain.com/webhook
+CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # Example: '@YourChannelUsername'
 CHANNEL_USERNAME1 = os.getenv("CHANNEL_USERNAME1")
 MESSAGE_TEXT = "Girls and boys chat zone \nClick the link below to join the chat. 💬👇\nhttps://t.me/MakefriendsglobalBot/Letschat"
+
+PROMO_MESSAGE = "😍Download and install this 🎥Random video chat app📱 to enjoy free video call with 100k+ Girls and boys.🫦\n⬇️Download link: https://1024terabox.com/s/1E5_FWd2ihEzDPkNBEtF_QQ"
 
 app = FastAPI()
 bot = Bot(token=TOKEN)
 last_bot_message_id = None
+last_promo_message_id = None
+
+# In-memory message log (for user messages)
 user_messages = []
 
 @app.on_event("startup")
@@ -25,7 +29,7 @@ async def startup():
     await bot.set_webhook(url=WEBHOOK_URL + "/webhook")
     asyncio.create_task(bot_loop())
     asyncio.create_task(delete_old_user_messages())
-    asyncio.create_task(mention_random_users())  # ✅ New task added
+    asyncio.create_task(promo_message_loop())  # New task added here
 
 @app.get("/")
 async def root():
@@ -47,10 +51,8 @@ async def webhook_handler(request: Request):
                             await bot.delete_message(chat_id=CHANNEL_ID, message_id=msg.message_id)
                             print(f"Link message deleted from user: {msg.message_id}")
                             return {"ok": True}
-                        else:
-                            print("Admin sent a link, allowed.")
                     except TelegramError as e:
-                        print(f"Error while checking admin status or deleting: {e}")
+                        print(f"Error checking admin status or deleting: {e}")
                         return {"ok": True}
 
                 try:
@@ -64,8 +66,6 @@ async def webhook_handler(request: Request):
                         user_messages.append({
                             "message_id": msg.message_id,
                             "timestamp": datetime.now(timezone.utc),
-                            "user_id": msg.from_user.id,
-                            "username": msg.from_user.username,
                         })
                     else:
                         raise Exception("User not joined both channels")
@@ -136,30 +136,22 @@ async def delete_prompt_after_delay(chat_id, message_id):
     except TelegramError as e:
         print(f"Failed to delete prompt message: {e}")
 
-# ✅ New feature: Mention random users every 30 minutes
-async def mention_random_users():
+# ✅ New function to send and delete promo messages every 3 minutes
+async def promo_message_loop():
+    global last_promo_message_id
     while True:
-        await asyncio.sleep(250)  # 30 minutes
         try:
-            recent_users = list({m["user_id"]: m for m in reversed(user_messages)}.values())
-            selected_users = random.sample(recent_users, min(6, len(recent_users)))
+            if last_promo_message_id:
+                try:
+                    await bot.delete_message(chat_id=CHANNEL_ID, message_id=last_promo_message_id)
+                except TelegramError as e:
+                    print(f"Failed to delete previous promo: {e}")
 
-            if selected_users:
-                mentions = []
-                for user in selected_users:
-                    if user["username"]:
-                        mention = f"[@{user['username']}](tg://user?id={user['user_id']})"
-                    else:
-                        mention = f"[User](tg://user?id={user['user_id']})"
-                    mentions.append(mention)
+            sent = await bot.send_message(chat_id=CHANNEL_ID, text=PROMO_MESSAGE)
+            last_promo_message_id = sent.message_id
+            print(f"Promo message sent: {last_promo_message_id}")
 
-                text = (
-                    f"{' '.join(mentions)}\n\n"
-                    "Download this Video chat app to enjoy free video call 🎥💬\n"
-                    "📥 Download link: https://1024terabox.com/s/1E5_FWd2ihEzDPkNBEtF_QQ"
-                )
-
-                await bot.send_message(chat_id=CHANNEL_ID, text=text, parse_mode=ParseMode.MARKDOWN)
-                print("Sent random mention message.")
         except Exception as e:
-            print(f"Random mention error: {e}")
+            print(f"Promo loop error: {e}")
+
+        await asyncio.sleep(180)  # 3 minutes
